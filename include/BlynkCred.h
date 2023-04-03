@@ -1,9 +1,0 @@
-#define MYBLYNKTEMPLATE "TMPL9giFW4dZ"
-#define MYBLYNKDEVICE "Turing"
-#define MYBLYNKAUTH "OlvkFKi1y5YL-tyIoagfqK4QImFe8w1i"
-//Prototype
-#define MYBLYNKAUTH_PROTO "RTf3E6l-eg8b_TWu9myJoOetCxSnS_OT"
-#define MYBLYNKTEMPLATE_PROTO "TMPL9giFW4dZ"
-#define MYBLYNKDEVICE_PROTO "Jupiter"
-
-

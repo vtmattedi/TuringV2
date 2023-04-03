@@ -35,7 +35,9 @@
         "tuple": "cpp",
         "type_traits": "cpp",
         "typeinfo": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "array": "cpp",
+        "string": "cpp"
     },
     "cmake.configureOnOpen": false
 }
