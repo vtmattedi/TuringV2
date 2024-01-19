@@ -100,11 +100,11 @@ void setup(void)
   }
   pinMode(25, OUTPUT);
   pinMode(33, INPUT);
+  digitalWrite(25, LOW);
   digitalWrite(17, 0);
   digitalWrite(16, 1);
   digitalWrite(18, 0);
   digitalWrite(19, 1);
-  digitalWrite(25, LOW);
 
   Serial.print("Locating devices...");
   sensors.begin();
@@ -177,13 +177,6 @@ void setup(void)
 
 void loop(void)
 {
-  setMux(random(0,15));
-  setMux(random(0,15));
-  setMux(random(0,15));
-  setMux(random(0,15));
-  setMux(random(0,15));
-  setMux(random(0,15));
-  delay(5);
   setMux(10);
   // call sensors.requestTemperatures() to issue a global temperature
   // request to all devices on the bus
@@ -196,6 +189,5 @@ void loop(void)
   Serial.println("dog:");
   // It responds almost immediately. Let's print out the data
   printTemperatureIndex(1); // Use a simple function to print out the data
-  setMux(random(0,15));
   delay(2000);
 }

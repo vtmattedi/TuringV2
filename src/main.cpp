@@ -1,5 +1,5 @@
 // Make sure to have these definition on top of your code or else Blynk won't be able to connect.
-#include <D:\Projects\PIO\TuringV2\TuringV2\include\Creds\BlynkCred.h>
+#include <../include/Creds/BlynkCred.h>
 
 #define PROTO // Toggle comment to switch between upload to Turing or Jupiter
 
@@ -16,6 +16,13 @@
 #define DEVICE_NAME "Jupiter"
 #endif
 
+enum TimeStampFormat
+{
+  DateAndTime,
+  OnlyDate,
+  OnlyTime
+};
+
 #define USE_SPIFFS
 
 #define DEBUG
@@ -27,7 +34,7 @@ bool _disable = false;
 #include <ESPmDNS.h>
 #include "OneWire.h"
 #include "DallasTemperature.h"
-#include <D:\Projects\PIO\TuringV2\TuringV2\lib\Time-master\TimeLib.h>
+#include <../lib/Time-master/TimeLib.h>
 #include <HTTPClient.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
@@ -38,12 +45,12 @@ bool _disable = false;
 #include <SPI.h>
 #include "FS.h"
 #endif
-#include <D:\Projects\PIO\TuringV2\TuringV2\include\Creds\WifiCred.h>
-
+#include <../include/Creds/WifiCred.h>
 #include "DHT.h"
-#include <D:\Projects\PIO\TuringV2\TuringV2\lib\NewPing\src\NewPing.h>
-#include <D:\Projects\PIO\TuringV2\TuringV2\lib\NightMare TCP\nightmaretcp.h>
-
+#include <../lib/NewPing/src/NewPing.h>
+#include <../lib/NightMare TCP/nightmaretcp.h>
+#include <ArduinoJson.h>
+String timestampToDateString(uint32_t, TimeStampFormat);
 #pragma region New Board pins
 
 #define SIPO_CLK 4
@@ -96,7 +103,7 @@ bool _disable = false;
 void HiveMQ_Callback(char *topic, byte *payload, unsigned int length);
 
 WiFiClientSecure hive_client;
-PubSubClient HiveMQ(hive_client);
+PubSubClient HiveMQ(MQTT_URL, MQTT_PORT, hive_client);
 
 static const char *root_ca PROGMEM = R"EOF(
 -----BEGIN CERTIFICATE-----
@@ -184,6 +191,7 @@ enum LED_Animations
   OnePixelLoop,
   WiFiStrength,
   WiFiStrengthInverse,
+  WiFi_Blink
 };
 
 struct LED_Controller
@@ -198,6 +206,7 @@ private:
   int _end_index = TOTALSIZE;
   int _num_of_leds = TOTALSIZE;
   int _interval = 25;
+  int _old_interval = 25;
   bool _helperFlag = false;
   int _helperInt = 0;
 
@@ -247,6 +256,7 @@ public:
 
     old_baseColor = baseColor;
     old_baseColor2 = baseColor2;
+    _old_interval = interval;
     baseColor = color1;
     baseColor2 = color2;
     _lastMillis = 0;
@@ -314,6 +324,58 @@ public:
       }
       led_array[_start_index] = baseColor;
     }
+    else if (current_animation == WiFi_Blink)
+    {
+      _helperFlag = true;
+    }
+  }
+
+  void setFixed2(CRGB led_array[], int size, CRGB color1 = 0xFF)
+  {
+    setFixed(led_array, _start_index, _start_index + size, color1);
+    Serial.printf("s: %d f: %d  -%dd\n", _start_index, _start_index + size, size);
+  }
+  void setFixed(CRGB led_array[], int start, int finish, CRGB color1 = 0xFF)
+  {
+    _progbar_is_running = true;
+    Serial.printf("s: %d f: %d\n", start, finish);
+    if (finish < start)
+    {
+      int t = finish;
+      finish = start;
+      start = t;
+    }
+
+    if (start < _start_index)
+      start = _start_index;
+    if (finish > _end_index)
+      finish = _end_index;
+    FastLED.clear();
+    for (size_t i = start; i <= finish; i++)
+    {
+      led_array[i] = color1;
+    }
+    FastLED.show();
+  }
+
+  void showStages(CRGB led_array[])
+  {
+    _progbar_is_running = true;
+    byte b = 0;
+    FastLED.clear();
+    for (size_t i = _start_index; i <= _end_index; i++)
+    {
+      if (i % 5 == 0)
+      {
+        led_array[i] = CRGB::White;
+        b++;
+      }
+      else
+      {
+        led_array[i] = CRGB::Red;
+      }
+    }
+    FastLED.show();
   }
 
   void run(CRGB led_array[])
@@ -516,7 +578,14 @@ public:
         }
       }
     }
-
+    else if (current_animation == WiFi_Blink)
+    {
+      if (_helperFlag)
+        led_array[_start_index] = baseColor;
+      else
+        led_array[_start_index] = baseColor2;
+      _helperFlag = !_helperFlag;
+    }
     FastLED.show();
   }
 
@@ -545,7 +614,7 @@ public:
     byte delta = xMax - xMin;
     if (xMax != 0)
     {
-      hsv.s = (int)(delta)*255 / xMax;
+      hsv.s = (int)(delta) * 255 / xMax;
     }
     else
     {
@@ -575,7 +644,7 @@ public:
   }
   void goToLastMode(CRGB led_array[])
   {
-    setMode(led_array, old_animation, old_baseColor, old_baseColor2, _interval);
+    setMode(led_array, old_animation, old_baseColor, old_baseColor2, _old_interval);
   }
 
   void progBar(CRGB led_array[], byte percentage, byte numLED, CRGB ValueColor = CRGB::DarkGreen, CRGB BackColor = CRGB::DarkRed, int delayMS = 4000)
@@ -709,7 +778,7 @@ bool digital_debounce = false;
 
 OneWire oneWire(MUX_INPUT);       // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 DallasTemperature DS18(&oneWire); // Pass our oneWire reference to Dallas Temperature.
-
+StaticJsonDocument<512> DocJson;
 DHT dht(MUX_INPUT, DHT_TYPE);
 
 #pragma region TCP server
@@ -722,40 +791,40 @@ struct Internals
 {
   uint sync_light = 0;               // No Idea what does this do
   bool auto_ldr_overriden = false;   // Flag to check if the Auto LDr has been overriden and therefore should be paused and resumed
-  uint8_t aut_ldr_resume_time = 0;   // Time to resume the Auto dimming based on the LDR
+  uint8_t auto_ldr_resume_time = 0;  // Time to resume the Auto dimming based on the LDR
   bool turn_off_lights_flag = false; // Flag to turn off the lights automaticaly
   // Old Variables
-  bool SendWifiResults = false; // Flag to send the results from the wifi scan once its done;
-  bool oldWifiStatus = false;   // Flag to not keep wirting to the digital pin ????
-  bool is_time_synced = false;  // True if time was synced false if not.
-  uint last_sensor_update = 0;  // unix timestamp in seconds of last sensor update.
-  uint last_sensor_log = 0;
+  bool SendWifiResults = false;                          // Flag to send the results from the wifi scan once its done;
+  bool oldWifiStatus = false;                            // Flag to not keep wirting to the digital pin ????
+  bool is_time_synced = false;                           // True if time was synced false if not.
+  uint last_sensor_update = 0;                           // unix timestamp in seconds of last sensor update.
+  uint last_sensor_log = 0;                              // unix timestamp in seconds of last sensor log.
   uint last_MQTT_update = 0;                             // unix timestamp in seconds of last sensor log.
   bool is_SD_mounted = false, is_SPIFFS_mounted = false; // Flags to see if mount of SD and  SPIFFS were sucessful
   bool time_synced = false;                              // Flags if time have been synced
   bool disable_sensors_update = false;                   // Flags wheater or not we want to upadate sensors values
+  String getInternalsAsString()
+  {
+    String result;
+    result += "sync_light: " + String(sync_light) + "\n";
+    result += "auto_ldr_overriden: " + String(auto_ldr_overriden) + "\n";
+    result += "auto_ldr_resume_time: " + String(auto_ldr_resume_time) + " (" + timestampToDateString(auto_ldr_resume_time, DateAndTime) + ")\n";
+    result += "turn_off_lights_flag: " + String(turn_off_lights_flag) + "\n";
+    result += "SendWifiResults: " + String(SendWifiResults) + "\n";
+    result += "oldWifiStatus: " + String(oldWifiStatus) + "\n";
+    result += "is_time_synced: " + String(is_time_synced) + "\n";
+    result += "last_sensor_update: " + String(last_sensor_update) + +" (" + timestampToDateString(last_sensor_update, DateAndTime) + ")\n";
+    result += "last_sensor_log: " + String(last_sensor_log) + +" (" + timestampToDateString(last_sensor_log, DateAndTime) + ")\n";
+    result += "last_MQTT_update: " + String(last_MQTT_update) + +" (" + timestampToDateString(last_MQTT_update, DateAndTime) + ")\n";
+    result += "is_SD_mounted: " + String(is_SD_mounted) + "\n";
+    result += "is_SPIFFS_mounted: " + String(is_SPIFFS_mounted) + "\n";
+    result += "time_synced: " + String(time_synced) + "\n";
+    result += "disable_sensors_update: " + String(disable_sensors_update) + "\n";
+    return result;
+  }
 };
 
 Internals control_variables;
-
-struct Pump_Controller
-{
-  uint start_time = 0;                 // Millis() of when did the pump started
-  bool is_running = false;             // is the pump currently running
-  bool programmed_end = false;         // Wheater or not the pump is supposed to stop based on the timer
-  uint end_time = 0;                   // Millis() of when the pump is supposed to end
-  String last_run_string = "Never On"; // String for the Blynk V10
-  uint last_auto_run = 0;              // Time stamp of last time that we auto ran the pump
-  bool force_start = false;            // forces the pump to run despites the Water Level sensors
-  bool tank_0_percent = false;         // Prevents loops of low water warnings
-  bool tank_50_percent = false;        // Prevents loops of half water warnings
-
-#define PUMP_HALF_TO_0_TIME 147707
-  byte WaterState = 0;          // The State of the water sensors. overusage of memory this is equal to wl_empty + wl_half
-  uint run_time_from_50 = 0;    // Amount of time the pump was on from 50% to 0%
-  uint run_time_from_start = 0; // Amount of time the pump was on since manual reset
-};
-Pump_Controller Pump;
 
 int trigPin = 26;
 int echoPin = 27;
@@ -771,7 +840,7 @@ void SIPO_Write(byte, bool, bool);
  * Turns on the mux and selects a port to be used.
  * @param port the output pin to be changed. [0-15]
  */
-void setMuxPort(byte port, bool ignoresipo = false)
+void setMuxPort(byte port, bool ignore_delay = true)
 {
   if (port > 15)
   {
@@ -791,6 +860,8 @@ void setMuxPort(byte port, bool ignoresipo = false)
 
   // Enables the mux
   digitalWrite(MUX_ENABLE, !HIGH);
+  if (!ignore_delay)
+    delay(50);
 }
 /**
  * Writes a bit to the SIPO Shifter. turns off the MUX.
@@ -806,10 +877,9 @@ void SIPO_Write(byte pin, bool value, bool skipmux = false)
     return;
   }
   // Disables MUX since SIPO shares DATA and LATCH with MUX Selector pins
-  digitalWrite(MUX_ENABLE, LOW);
+  digitalWrite(MUX_ENABLE, !LOW);
   SIPO_VALUE = (SIPO_VALUE & ~(1 << pin)) | (value << pin);
-  // Serial.print("0b");
-  // Serial.println(SIPO_VALUE, BIN);
+
   digitalWrite(SIPO_LATCH, LOW);
   shiftOut(SIPO_DATA, SIPO_CLK, MSBFIRST, SIPO_VALUE);
   digitalWrite(SIPO_LATCH, HIGH);
@@ -818,6 +888,11 @@ void SIPO_Write(byte pin, bool value, bool skipmux = false)
   {
     digitalWrite(MUX_ENABLE, !HIGH);
     setMuxPort(MUX_VALUE);
+  }
+  // SET LED_2 as the visual indicator for relay pin
+  if (pin == RELAY_PIN)
+  {
+    SIPO_Write(LED_2, !value, skipmux);
   }
 }
 /**
@@ -833,7 +908,7 @@ void SIPO_WriteBYTE(byte newValue, bool skipmux = false)
   digitalWrite(SIPO_LATCH, LOW);
   shiftOut(SIPO_DATA, SIPO_CLK, MSBFIRST, newValue);
   digitalWrite(SIPO_LATCH, HIGH);
-  // // restore MUX
+  // restore MUX
   if (!skipmux)
   {
     digitalWrite(MUX_ENABLE, !HIGH);
@@ -896,9 +971,9 @@ void FileWrite(String FileName, String Message, bool useSPIFFS = true, bool time
 
 /** Returns the sum of all characteres in the string
  @param string_to_test String to be summed */
-int checksum(String string_to_test)
+uint checksum(String string_to_test)
 {
-  int sum = 0;
+  uint sum = 0;
   for (size_t i = 0; i < string_to_test.length(); i++)
   {
     sum += string_to_test[i];
@@ -1088,7 +1163,10 @@ public:
   void Verify_timestamp()
   {
     if (Status == SensorStatus::Online && now() - modified_timestamp >= timeout_seconds)
+    {
       Status = SensorStatus::Offline;
+      Serial.printf("[%s] timed out! age: %d secs, last update: %d\n", Label, now() - modified_timestamp, modified_timestamp);
+    }
   }
   void Report()
   {
@@ -1334,7 +1412,8 @@ struct SensorList
     String topic = DEVICE_NAME;
     topic += "/";
     topic += sensor_to_send->ID;
-    MQTT_Send(topic, sensor_to_send->getValue());
+    // MQTT_Send(topic, sensor_to_send->getValue());
+    MQTT_Send(topic, sensor_to_send->getValue() + String(" (") + String(sensor_to_send->Status) + String(")"));
     return true;
   }
 
@@ -1441,7 +1520,7 @@ struct preferences
   // flag to log the files or not
   bool enable_log = false;
 
-  byte MQTT_interval = 1;
+  byte MQTT_interval = 60;
 
   /* Make sure to save & load nescessary preferences
    *
@@ -1590,15 +1669,186 @@ struct preferences
     response += "\n";
     return response;
   }
-};
+} user_preferences;
 
-preferences user_preferences;
+struct Pump_Controller
+{
+  uint start_time = 0;                 // Millis() of when did the pump started
+  bool is_running = false;             // is the pump currently running
+  bool programmed_end = false;         // Wheater or not the pump is supposed to stop based on the timer
+  uint end_time = 0;                   // Millis() of when the pump is supposed to end
+  String last_run_string = "Never On"; // String for the Blynk V10
+  uint last_auto_run = 0;              // Time stamp of last time that we auto ran the pump
+  bool force_start = false;            // forces the pump to run despites the Water Level sensors
+  bool tank_0_percent = false;         // Prevents loops of low water warnings
+  bool tank_50_percent = false;        // Prevents loops of half water warnings
+
+#define PUMP_HALF_TO_0_TIME 147707
+  byte WaterState = 0;          // The State of the water sensors. overusage of memory this is equal to wl_empty + wl_half
+  uint run_time_from_50 = 0;    // Amount of time the pump was on from 50% to 0%
+  uint run_time_from_start = 0; // Amount of time the pump was on since manual reset
+
+  /// @brief Predicts the next activation of the pump
+  /// @return The timestamp of the estimated next activation of the pump
+  uint predictNextRun()
+  {
+    uint next_run = last_auto_run + user_preferences.auto_pump_interval;
+    if (user_preferences.prefered_pump_hour - hour(next_run) <= 4)
+    {
+      while (hour(next_run) < user_preferences.prefered_pump_hour)
+        next_run += 60;
+    }
+    else
+    {
+      next_run += 4 * 3600;
+    }
+    return next_run;
+  }
+} Pump;
+
+/*Estimates the Water Level bas0ed on how much time the pump have been on.
+ *@param Pump_runtime The amount of time (in ms) that the pump ran for.
+ *@param forceState if > forceState will force the level to 50 or 0 % the first time one of the water level sensors have been triggred
+ *@param forceUsedPump if > 0 this will set the amount of run time to it
+ */
+void CalcWaterLevel(int Pump_runtime, int forceState = -1, int forceUsedPump = -1)
+{
+  // Forces a Water_Level State;
+  if (forceState >= 0)
+  {
+    Water_Level = forceState;
+    Pump.run_time_from_50 = 0;
+    return;
+  }
+  // Forces pump.UsedPumpTime
+  if (forceUsedPump > 0)
+  {
+    Pump.run_time_from_50 = forceUsedPump;
+  }
+  // Since its leaking only supported for 50 to 0;
+  if (Pump_runtime > 0 && Pump.WaterState == 1)
+  {
+    Pump.run_time_from_50 += Pump_runtime;
+    if (SPIFFS.exists("/water.txt"))
+      SPIFFS.remove("/water.txt");
+    FileWrite("/water.txt", String(Pump.run_time_from_50), true, false);
+  }
+  Water_Level = 50 * Pump.WaterState - round((double)Pump.run_time_from_50 / PUMP_HALF_TO_0_TIME * 50);
+  Sensors.getSensorById("waterlevel")->UpdateValue(Water_Level);
+  Blynk.virtualWrite(V6, Water_Level);
+  //  Serial.printf("{%d}{%d}{%d} --- %d - %d - %d\n",Pump_runtime,forceState,forceUsedPump,pump.WaterState,Water_Level, pump.UsedPumpTime);
+}
+
+/*Starts the pump
+ *@param time The amount of time (in ms) to leave the pump running.
+ *t < 0 = runs until StopPump is Called.
+ */
+void StartPump(int time = -1)
+{
+  if (Pump.is_running || time == 0)
+  {
+    Blynk.virtualWrite(V9, "Pump already running\n");
+    return;
+  }
+  if (Water_Level == 0 && !Pump.force_start)
+  {
+    Blynk.virtualWrite(V9, "Water Low, Check reservoir or wiring.\n");
+    Serial.println("Water Low, Check reservoir or wiring.");
+    return;
+  }
+  Pump.start_time = millis();
+  // OLD:// digitalWrite(PUMP_RELAY, !HIGH);
+  SIPO_Write(RELAY_PIN, !HIGH);
+  Serial.println("PUMP TURNED ON");
+  Pump.is_running = true;
+  if (time > 0)
+  {
+    Pump.end_time = Pump.start_time + time;
+    String Msg = "PUMP Starting [";
+    Msg += time;
+    Msg += "ms]\n";
+    Blynk.virtualWrite(V9, Msg);
+    Pump.programmed_end = true;
+  }
+  else
+    Pump.programmed_end = false;
+  Blynk.virtualWrite(V10, "Pump Running");
+}
+/*Stops the pump
+ *@param halt Stops the pump even if its not the time yet. ignored  if pump was forcifully started.
+ */
+void StopPump(bool halt = false)
+{
+  String Msg = "";
+  if (halt == true && !Pump.force_start)
+  {
+    SIPO_Write(RELAY_PIN, !LOW);
+    Msg += "[halted]";
+  }
+  if (millis() < Pump.end_time && Pump.programmed_end && !halt || !Pump.is_running)
+    return;
+
+  int result = millis() - Pump.start_time;
+  SIPO_Write(RELAY_PIN, !LOW); // Relay is active low
+  Serial.printf("PUMP TURNED Off [%d]\n", result);
+  Msg += "PUMP was on for ";
+  Msg += result;
+  Msg += "ms.\n";
+  Blynk.virtualWrite(9, Msg);
+  Msg = "Last time the Pump was activated: ";
+  if (day() < 10)
+    Msg += "0";
+  Msg += day();
+  Msg += "/";
+  if (month() < 10)
+    Msg += "0";
+  Msg += month();
+  Msg += " ";
+  if (hour() < 10)
+    Msg += "0";
+  Msg += hour();
+  Msg += ":";
+  if (minute() < 10)
+    Msg += "0";
+  Msg += minute();
+  FileWrite("/log.txt", String(result));
+  CalcWaterLevel(result);
+  Blynk.virtualWrite(10, Msg);
+  Pump.is_running = false;
+}
 
 struct command_result
 {
   bool result = false;
   String response = "";
 };
+
+String getPinName(int pinNumber)
+{
+  switch (pinNumber)
+  {
+  case MOIST_1:
+    return "  MOIST_1  ";
+  case MOIST_2:
+    return "  MOIST_2  ";
+  case RAIN_PIN:
+    return "    RAIN   ";
+  case DHT_PIN:
+    return "    DHT    ";
+  case DS18b20_PIN:
+    return "  DS18b20  ";
+  case WL_MIDDLE - 1:
+    return " WL_EXTRA  ";
+  case WL_BOTTOM:
+    return " WL_BOTTOM ";
+  case WL_MIDDLE:
+    return " WL_MIDDLE ";
+  case LDR_PIN:
+    return "    LDR    ";
+  default:
+    return "NOT_DEFINED";
+  }
+}
 
 command_result handleCommand(String message, char *delimiter = " ", String extra_arg = "")
 {
@@ -1697,14 +1947,15 @@ command_result handleCommand(String message, char *delimiter = " ", String extra
     response += MUX_S3;
     response += "] - bit 0 shared whith SIPO Data and bit 1 shared with SIPO Latch\n";
     response += "   -DS18b20 BUS           @ Port 10\n";
-    response += "   -DHT11 BUS             @ Port 9\n";
+    response += "   -DHT11 BUS             @ Port  9\n";
     response += "   -LDR                   @ Port 14\n";
-    response += "   -MOISTURE SENSOR 0     @ Port 0\n";
-    response += "   -MOISTURE SENSOR 1     @ Port 1\n";
-    response += "   -MOISTURE SENSOR 2     @ Port 2\n";
-    response += "   -MOISTURE SENSOR 3     @ Port 3\n";
+    response += "   -MOISTURE SENSOR 0     @ Port  0\n";
+    response += "   -MOISTURE SENSOR 1     @ Port  1\n";
+    response += "   -MOISTURE SENSOR 2     @ Port  2\n";
+    response += "   -MOISTURE SENSOR 3     @ Port  3\n";
     response += "   -WATER LEVEL SENSOR 0  @ Port 13\n";
     response += "   -WATER LEVEL SENSOR 1  @ Port 12\n";
+    response += "   -RAIN                  @ Port  4\n";
     response += "Onboard RGB: [2]\n";
     response += "WS2818b    : [23]\n";
     response += "WS2811     : [26]\n";
@@ -1818,15 +2069,28 @@ command_result handleCommand(String message, char *delimiter = " ", String extra
       response += SPIFFS.open("/lastAutoPumpReadable.txt").readString();
     response += " || Next: ";
     response += Pump.last_auto_run + user_preferences.auto_pump_interval;
+    response += " (";
+    response += timestampToDateString(Pump.last_auto_run + user_preferences.auto_pump_interval, DateAndTime);
+    response += ") ";
     response += " || Pump Run Time: ";
     response += Pump.run_time_from_50;
+    response += " || Estimated next activation: ";
+    response += timestampToDateString(Pump.predictNextRun(), DateAndTime);
+    if (SPIFFS.exists("/lastAutoPump.txt"))
+    {
+      int t = atoi(SPIFFS.open("/lastAutoPump.txt").readString().c_str());
+      Serial.printf("%d = %s\n", t, timestampToDateString(t, DateAndTime).c_str());
+    }
+
     // response += auto_pump_time_ajusted(now());
   }
   else if (command == "PUMP_TEST")
   {
     response += "last_pump:";
     response += Pump.last_auto_run;
-    response += " | now:";
+    response += " (";
+    response += timestampToDateString(Pump.last_auto_run, DateAndTime);
+    response += ") | now:";
     uint current_time = now();
     response += current_time;
     response += " || p.p.h: ";
@@ -1851,6 +2115,31 @@ command_result handleCommand(String message, char *delimiter = " ", String extra
     response += "; {";
     response += test;
     response += "}";
+  }
+  else if (command == "PUMP")
+  {
+    uint16_t runtime = atoi(args[0].c_str());
+    if (runtime == 0 && args[0] != "0")
+    {
+      /* Conversion Error */
+      result.result = false;
+      result.response = "failed to parse: ";
+      result.response += args[0];
+      return result;
+    }
+    response = "Pump manual trigger for [";
+    response += runtime;
+    response += "] ms. Pump is on: SIPO output: ";
+    response += RELAY_PIN;
+    if (args[1] == "-f")
+    {
+      Pump.force_start = true;
+    }
+    StartPump(runtime);
+    if (args[1] == "-f")
+    {
+      Pump.force_start = false;
+    }
   }
   else if (command == "TRIGGER_US")
   {
@@ -2107,7 +2396,7 @@ command_result handleCommand(String message, char *delimiter = " ", String extra
     for (size_t i = 0; i < DS18.getDeviceCount(); i++)
     {
       DS18.getAddress(aaa, i);
-      Serial.printf("ADDR: [%d] 0x",i);
+      Serial.printf("ADDR: [%d] 0x", i);
       for (size_t i = 0; i < 8; i++)
       {
         if (aaa[i] < 0x10)
@@ -2119,7 +2408,7 @@ command_result handleCommand(String message, char *delimiter = " ", String extra
     DS18.requestTemperatures();
     float res = DS18.getTempCByIndex(0);
     float res2 = DS18.getTempCByIndex(1);
-    Serial.printf("Test Result [0]:%f [1]:%f\n", res,res2);
+    Serial.printf("Test Result [0]:%f [1]:%f\n", res, res2);
   }
   else if (command == "CODE")
   {
@@ -2165,6 +2454,15 @@ command_result handleCommand(String message, char *delimiter = " ", String extra
   else if (command == "REPORT")
   {
     args[0].toLowerCase();
+    if (args[0] == "all")
+    {
+      for (size_t i = 0; i < SENSOR_ARRAY_SIZE; i++)
+      {
+        /* code */
+      }
+
+      Sensors.getSensorByLabel(args[0])->report = !Sensors.getSensorByLabel(args[0])->report;
+    }
 
     Sensors.getSensorByLabel(args[0])->report = !Sensors.getSensorByLabel(args[0])->report;
     resolve = true;
@@ -2180,6 +2478,169 @@ command_result handleCommand(String message, char *delimiter = " ", String extra
     response += control_variables.disable_sensors_update ? "disable" : "enable";
     resolve = true;
   }
+  else if (command == "AGE")
+  {
+    response = "";
+    response += "[Synced:";
+    response += control_variables.is_time_synced;
+    response += "] TimeStamp: ";
+    response += now();
+    response += " || Hours: ";
+    response += (double)minutes16() / 60;
+    response += " || Mins: ";
+    response += minutes16();
+    response += " || Secs: ";
+    response += seconds16();
+    resolve = true;
+
+    // Serial.printf("[Synced: %d] TimeStamp:  %d|| Hours: %f || Mins: %f\n",control_variables.is_time_synced,now(), (double)now()/3600, (double)now()/60);
+  }
+  else if (command == "CONTROL_VARIABLES")
+  {
+    response = control_variables.getInternalsAsString();
+    resolve = true;
+  }
+  else if (command == "MUXSWEEP")
+  {
+    byte old_mux = MUX_VALUE;
+    response += "Mux Sweep:\n";
+    for (size_t i = 0; i < 15; i++)
+    {
+      setMuxPort(i);
+      int an_result = 0;
+      for (size_t j = 0; j < 5; j++)
+      {
+        an_result += analogRead(MUX_INPUT);
+        delay(2);
+      }
+      pinMode(MUX_INPUT, INPUT);
+      auto dg_result = digitalRead(MUX_INPUT);
+      String an_str = String(an_result / 5);
+
+      response += " [";
+      response += getPinName(i);
+      response += "]   *port: ";
+      if (i < 10)
+        response += " ";
+      response += i;
+      response += " Analog[5]: ";
+      for (size_t k = 0; k <= 4; k++)
+      {
+        if (k > an_str.length())
+          response += " ";
+      }
+      response += an_str;
+      response += "  Digital: ";
+      response += dg_result;
+      response += "\n";
+      delay(10);
+    }
+    // Restores the old value on the mux after the sweep
+    setMuxPort(old_mux);
+  }
+  else if (command == "MUX-SIPOSWEEP")
+  {
+    byte old_mux = MUX_VALUE;
+    response += "Mux-SIPO Sweep:\n";
+    SIPO_Write(MOIST_EN0, HIGH);
+    response += " - SIPO 3 Enabled:\n";
+    for (size_t i = 0; i < 15; i++)
+    {
+      setMuxPort(i);
+      int an_result = 0;
+      for (size_t j = 0; j < 5; j++)
+      {
+        an_result += analogRead(MUX_INPUT);
+        delay(1);
+      }
+      pinMode(MUX_INPUT, INPUT);
+      auto dg_result = digitalRead(MUX_INPUT);
+      String an_str = String(an_result / 5);
+      response += " [";
+      response += getPinName(i);
+      response += "]   *port: ";
+      if (i < 10)
+        response += " ";
+      response += i;
+      response += " Analog[5]: ";
+      for (size_t k = 0; k <= 4; k++)
+      {
+        if (k > an_str.length())
+          response += " ";
+      }
+      response += an_str;
+      response += "  Digital: ";
+      response += dg_result;
+      response += "\n";
+    }
+    SIPO_Write(MOIST_EN0, LOW);
+    SIPO_Write(MOIST_EN1, HIGH);
+    response += " - SIPO 4 Enabled:\n";
+    for (size_t i = 0; i < 15; i++)
+    {
+      setMuxPort(i);
+      int an_result = 0;
+      for (size_t j = 0; j < 5; j++)
+      {
+        an_result += analogRead(MUX_INPUT);
+        delayMicroseconds(100);
+      }
+      pinMode(MUX_INPUT, INPUT);
+      auto dg_result = digitalRead(MUX_INPUT);
+      String an_str = String(an_result / 5);
+
+      response += " [";
+      response += getPinName(i);
+      response += "]   *port: ";
+      if (i < 10)
+        response += " ";
+      response += i;
+      response += " Analog[5]: ";
+      for (size_t k = 0; k <= 4; k++)
+      {
+        if (k > an_str.length())
+          response += " ";
+      }
+      response += an_str;
+      response += "  Digital: ";
+      response += dg_result;
+      response += "\n";
+    }
+    SIPO_Write(MOIST_EN1, LOW);
+    // Restores the old value on the mux after the sweep
+    setMuxPort(old_mux);
+  }
+  else if (command == "TESTLED")
+  {
+    int start = atoi(args[0].c_str());
+    int end = atoi(args[1].c_str());
+    if (start == 0 && end == 0)
+    {
+      response = "Inavlid Input: ";
+      response += args[0];
+      LED_Strip.showStages(leds);
+    }
+    else
+    {
+      if (end > 0)
+      {
+        LED_Strip.setFixed(leds, start, end, CRGB::Blue);
+        response = "Setting strip from ";
+        response += start;
+        response += " to ";
+        response += end;
+        response += " to Blue";
+      }
+      else
+      {
+        LED_Strip.setFixed2(leds, start, CRGB::Blue);
+        response = "Setting strip with size ";
+        response += start;
+        response += " to Blue";
+      }
+    }
+  }
+
   else
     resolve = false;
 
@@ -2189,116 +2650,6 @@ command_result handleCommand(String message, char *delimiter = " ", String extra
   Serial.printf("message = %s | command = %s | args[0] = %s | args[1] = %s | args[2] = %s |\n", message.c_str(), command.c_str(), args[0].c_str(), args[1].c_str(), args[2].c_str());
 
   return result;
-}
-
-/*Estimates the Water Level bas0ed on how much time the pump have been on.
- *@param Pump_runtime The amount of time (in ms) that the pump ran for.
- *@param forceState if > forceState will force the level to 50 or 0 % the first time one of the water level sensors have been triggred
- *@param forceUsedPump if > 0 this will set the amount of run time to it
- */
-void CalcWaterLevel(int Pump_runtime, int forceState = -1, int forceUsedPump = -1)
-{
-  // Forces a Water_Level State;
-  if (forceState >= 0)
-  {
-    Water_Level = forceState;
-    Pump.run_time_from_50 = 0;
-    return;
-  }
-  // Forces pump.UsedPumpTime
-  if (forceUsedPump > 0)
-  {
-    Pump.run_time_from_50 = forceUsedPump;
-  }
-  // Since its leaking only supported for 50 to 0;
-  if (Pump_runtime > 0 && Pump.WaterState == 1)
-  {
-    Pump.run_time_from_50 += Pump_runtime;
-    if (SPIFFS.exists("/water.txt"))
-      SPIFFS.remove("/water.txt");
-    FileWrite("/water.txt", String(Pump.run_time_from_50), true, false);
-  }
-  Water_Level = 50 * Pump.WaterState - round((double)Pump.run_time_from_50 / PUMP_HALF_TO_0_TIME * 50);
-  Sensors.getSensorById("waterlevel")->UpdateValue(Water_Level);
-  Blynk.virtualWrite(V6, Water_Level);
-  //  Serial.printf("{%d}{%d}{%d} --- %d - %d - %d\n",Pump_runtime,forceState,forceUsedPump,pump.WaterState,Water_Level, pump.UsedPumpTime);
-}
-
-/*Starts the pump
- *@param time The amount of time (in ms) to leave the pump running.
- *t < 0 = runs until StopPump is Called.
- */
-void StartPump(int time = -1)
-{
-  if (Pump.is_running || time == 0)
-  {
-    Blynk.virtualWrite(V9, "Pump already running\n");
-    return;
-  }
-  if (Water_Level == 0 && !Pump.force_start)
-  {
-    Blynk.virtualWrite(V9, "Water Low, Check reservoir or wiring.\n");
-    return;
-  }
-  Pump.start_time = millis();
-  // OLD:// digitalWrite(PUMP_RELAY, !HIGH);
-  SIPO_Write(RELAY_PIN, !HIGH);
-  Serial.println("PUMP TURNED ON");
-  Pump.is_running = true;
-  if (time > 0)
-  {
-    Pump.end_time = Pump.start_time + time;
-    String Msg = "PUMP Starting [";
-    Msg += time;
-    Msg += "ms]\n";
-    Blynk.virtualWrite(V9, Msg);
-    Pump.programmed_end = true;
-  }
-  else
-    Pump.programmed_end = false;
-  Blynk.virtualWrite(V10, "Pump Running");
-}
-/*Stops the pump
- *@param halt Stops the pump even if its not the time yet. ignored  if pump was forcifully started.
- */
-void StopPump(bool halt = false)
-{
-  String Msg = "";
-  if (halt == true && !Pump.force_start)
-  {
-    SIPO_Write(RELAY_PIN, !LOW);
-    Msg += "[halted]";
-  }
-  if (millis() < Pump.end_time && Pump.programmed_end && !halt || !Pump.is_running)
-    return;
-
-  int result = millis() - Pump.start_time;
-  SIPO_Write(RELAY_PIN, !LOW); // Relay is active low
-  Serial.printf("PUMP TURNED Off [%d]\n", result);
-  Msg += "PUMP was on for ";
-  Msg += result;
-  Msg += "ms.\n";
-  Blynk.virtualWrite(9, Msg);
-  Msg = "Last time the Pump was activated: ";
-  if (day() < 10)
-    Msg += "0";
-  Msg += day();
-  Msg += "/";
-  if (month() < 10)
-    Msg += "0";
-  Msg += month();
-  Msg += " ";
-  if (hour() < 10)
-    Msg += "0";
-  Msg += hour();
-  Msg += ":";
-  if (minute() < 10)
-    Msg += "0";
-  Msg += minute();
-  FileWrite("/log.txt", String(result));
-  CalcWaterLevel(result);
-  Blynk.virtualWrite(10, Msg);
-  Pump.is_running = false;
 }
 
 #pragma region BLYNK
@@ -2321,7 +2672,7 @@ BLYNK_WRITE(V0)
     uint8_t new_hour = hour() + 12;
     if (new_hour > 23)
       new_hour = new_hour - 24;
-    control_variables.aut_ldr_resume_time = new_hour;
+    control_variables.auto_ldr_resume_time = new_hour;
   }
   int valueV0 = param.asInt();
   Serial.printf("[V0][%d][Blynk] >> Value Recieved = %d\n", now(), valueV0);
@@ -2658,6 +3009,46 @@ String HandleMsg(String msg, byte index)
   return response;
 }
 
+/// @brief Converts a timestamp to a date and time String.
+/// @param timestamp The unix timestamp to be parsed.
+/// @param _format Whether you want Date, Time or Both.
+/// @return a String with the date on the timestamp formatted as HH:mm DD/MM/YY, attending to the TimeStampFormat passed.
+String timestampToDateString(uint32_t timestamp, TimeStampFormat _format = DateAndTime)
+{
+  // Convert the timestamp to a time_t object.
+  time_t timeObject = timestamp;
+
+  // Extract the date components from the time_t object.
+  int _year = year(timeObject) % 100;
+  int _month = month(timeObject);
+  int _day = day(timeObject);
+
+  int _hour = hour(timeObject);
+  int _minute = minute(timeObject);
+
+  String dateString = "";
+  // Adds Time
+  if (_format != OnlyDate)
+  {
+    dateString = String(_hour, DEC).length() == 1 ? "0" + String(_hour, DEC) : String(_hour, DEC);
+    dateString += ":";
+    dateString += String(_minute, DEC).length() == 1 ? "0" + String(_minute, DEC) : String(_minute, DEC);
+  }
+  // Adds a Space between Time and Date
+  if (_format == DateAndTime)
+    dateString += " ";
+  // Adds Date
+  if (_format != OnlyTime)
+  {
+    dateString += String(_day, DEC).length() == 1 ? "0" + String(_day, DEC) : String(_day, DEC);
+    dateString += "/";
+    dateString += String(_month, DEC).length() == 1 ? "0" + String(_month, DEC) : String(_month, DEC);
+    dateString += "/";
+    dateString += String(_year, DEC);
+  }
+  return dateString;
+}
+
 // Checks wheater or not it is time to water the garden again checks for the prefered hour to do so or
 // if it has been 4 hours since the timer has been triggered and the prefered hour have not been reached yet
 bool auto_pump_time_ajusted(uint current_time)
@@ -2680,7 +3071,8 @@ bool auto_pump_time_ajusted(uint current_time)
   return false;
 }
 
-void NEWupdateValues(bool skipUpload = false)
+
+void updateValues(bool skipUpload = false)
 {
   if (control_variables.disable_sensors_update)
     return;
@@ -2692,9 +3084,11 @@ void NEWupdateValues(bool skipUpload = false)
     byte RESTORE_MUX = MUX_VALUE;
     byte RESTORE_SIPO = SIPO_VALUE;
     control_variables.last_sensor_update = current_time;
-    //analogRead on the mux fucks the onewire thingy
+    
+    // analogRead on the mux fucks the onewire thingy
     pinMode(MUX_INPUT, INPUT);
     setMuxPort(DS18b20_PIN);
+    delay(100);
     DS18.requestTemperatures();
     DS18inner = DS18.getTempCByIndex(0);
 
@@ -2707,13 +3101,11 @@ void NEWupdateValues(bool skipUpload = false)
     if (DS18Probe == -127 || DS18Probe == -255 || DS18Probe == 85)
       Sensors.getSensorById("ds18prob")->setStatus(Offline);
     else
-    {
       Sensors.getSensorById("ds18prob")->UpdateValue(DS18Probe);
-    }
-
+    delay(100);
     SIPO_Write(MOIST_EN0, 1, true);
     setMuxPort(MOIST_1);
-    delay(1);
+    delay(10);
     int totalMoisture = 0;
     for (size_t i = 0; i < MOISTURE_READS; i++)
     {
@@ -2723,7 +3115,7 @@ void NEWupdateValues(bool skipUpload = false)
     Moisture_1 = map(totalMoisture, 0, MAX_MOISTURE_1_READ, 0, 100);
     Sensors.getSensorById("moist")->UpdateValue(Moisture_1);
     setMuxPort(MOIST_2);
-    delay(1);
+    delay(10);
     totalMoisture = 0;
     for (size_t i = 0; i < MOISTURE_READS; i++)
     {
@@ -2731,16 +3123,17 @@ void NEWupdateValues(bool skipUpload = false)
     }
     totalMoisture = totalMoisture / 10;
     Moisture_2 = map(totalMoisture, 0, MAX_MOISTURE_1_READ, 0, 100);
+    pinMode(MUX_INPUT, INPUT);
     Sensors.getSensorById("moist2")->UpdateValue(Moisture_2);
     SIPO_Write(MOIST_EN0, 0, true);
-
     setMuxPort(WL_MIDDLE);
-    delay(1);
+    delay(10);
     wl_half = !digitalRead(MUX_INPUT);
     setMuxPort(WL_BOTTOM);
-    delay(1);
+    delay(10);
     wl_empty = !digitalRead(MUX_INPUT);
 
+    Sensors.getSensorById("waterlevel")->UpdateValue(50 * (wl_half + wl_empty));
     if (wl_half + wl_empty != Pump.WaterState)
     {
       Pump.WaterState = wl_half + wl_empty;
@@ -2757,25 +3150,36 @@ void NEWupdateValues(bool skipUpload = false)
     LDR_VALUE = totalLDR / 10;
     Sensors.getSensorById("ldr")->UpdateValue(LDR_VALUE);
 
-    setMuxPort(DHT_PIN);
-    DHT11_hum = dht.readHumidity();
-    DHT11_temp = dht.readTemperature();
-    Sensors.getSensorById("dht_hum")->UpdateValue(DHT11_hum);
-    Sensors.getSensorById("dht_temp")->UpdateValue(DHT11_temp);
-
+    // setMuxPort(DHT_PIN);
+    // DHT11_hum = dht.readHumidity();
+    // DHT11_temp = dht.readTemperature();
+    // Sensors.getSensorById("dht_hum")->UpdateValue(DHT11_hum);
+    // Sensors.getSensorById("dht_temp")->UpdateValue(DHT11_temp);
+    pinMode(MUX_INPUT, INPUT_PULLDOWN);
     SIPO_Write(MOIST_EN1, HIGH, true);
     setMuxPort(RAIN_PIN);
-    delay(1);
+    delay(10);
     int totalRain = 0;
-    for (size_t i = 0; i < 250; i++)
+    for (size_t i = 0; i < 10; i++)
     {
       totalRain += analogRead(MUX_INPUT);
     }
-    Rain_level = totalRain / 250;
+    Rain_level = totalRain / 10;
     Sensors.getSensorById("rain")->UpdateValue(Rain_level);
     SIPO_Write(MOIST_EN1, LOW, true);
     SIPO_WriteBYTE(RESTORE_SIPO);
     setMuxPort(RESTORE_MUX);
+    if (control_variables.is_SPIFFS_mounted)
+    {
+      float _usedSPIFFS = (float)SPIFFS.usedBytes() / (float)SPIFFS.totalBytes();
+      Sensors.getSensorById("spiffs")->UpdateValue(_usedSPIFFS);
+      Sensors.getSensorById("spiffs")->setStatus(Online);
+    }
+    else
+    {
+      Sensors.getSensorById("spiffs")->UpdateValue(-1);
+      Sensors.getSensorById("spiffs")->setStatus(Offline);
+    }
 
     if (current_time - control_variables.last_sensor_log >= user_preferences.sensor_log_interval && !skipUpload)
     {
@@ -2856,6 +3260,7 @@ void NEWupdateValues(bool skipUpload = false)
     if (current_time - control_variables.last_MQTT_update >= user_preferences.MQTT_interval && !skipUpload)
     {
       Sensors.Send_All_MQTT();
+      control_variables.last_MQTT_update = current_time;
     }
   }
 
@@ -2939,6 +3344,7 @@ void AutoRegulateBrightness()
 {
 #define LDR_READS 20
   int newBright = 0;
+  setMuxPort(LDR_PIN);
   for (size_t i = 0; i < LDR_READS; i++)
   {
     newBright += analogRead(MUX_INPUT);
@@ -2967,6 +3373,7 @@ void AutoRegulateBrightness()
       Blynk.virtualWrite(V0, 1);
     control_variables.sync_light = true;
   }
+
   FastLED.setBrightness(map(newBright, 1000, 0, 0, 255));
   FastLED.show();
 }
@@ -2994,6 +3401,7 @@ void InitializeSensors()
     Sensors.Add("dht_temp", "DHT Temperature", SensorDataType::Type_Float);
     Sensors.Add("waterlevel", "Water Level", SensorDataType::Type_Int);
     Sensors.Add("rain", "Rain", SensorDataType::Type_Int);
+    Sensors.Add("spiffs", "spiffs", SensorDataType::Type_Float);
   }
 }
 
@@ -3073,7 +3481,7 @@ void setup()
   {
     pinMode(MUX_CONTROL[i], OUTPUT);
   }
-  pinMode(MUX_INPUT, INPUT);
+  pinMode(MUX_INPUT, INPUT_PULLUP);
   pinMode(MUX_ENABLE, OUTPUT);
 
 #ifdef PROTO
@@ -3082,6 +3490,9 @@ void setup()
 
   setMuxPort(0);
   SIPO_WriteBYTE(0);
+  beacons.setBoundries(0, BEACONS_SIZE - 1);
+  onBoardLEDs.setBoundries(0, ONBOARD_RGB_SIZE - 1);
+  LED_Strip.setBoundries(0, 20 - 1);
 
   WiFi.begin(WIFISSID, WIFIPASSWD);
   bool createAp = false; // flag for creating an AP in case we can't connect to wifi
@@ -3158,7 +3569,7 @@ void setup()
   }
   FastLED.setBrightness(64);
   FastLED.clear();
-  SetOnboardLEDS(CRGB::Red, true);
+  // SetOnboardLEDS(CRGB::Red, true);
   setBeaconColor(0xf0f0);
   // Try to connect to blynk. don't use Blynk.begin(), it will block the code if you don't have an in ternet connection
   Blynk.config(auth);
@@ -3179,24 +3590,24 @@ void setup()
 
   // Starts the DS18b20 and the DHT sensor.
   setMuxPort(DS18b20_PIN);
+  pinMode(MUX_INPUT, INPUT);
   DS18.begin();
   DS18.setResolution(11);
   setMuxPort(0);
-  // Serial.println("devs");
-  // Serial.println(DS18.getDeviceCount());
-  // for (size_t i = 0; i < DS18.getDeviceCount(); i++)
-  // {
-  //   DeviceAddress aaa;
-  //   DS18.getAddress(aaa, i);
-  //   printAddress(aaa);
-  //   Serial.println();
-  // }
+  Serial.println("devs");
+  Serial.println(DS18.getDeviceCount());
+  for (size_t i = 0; i < DS18.getDeviceCount(); i++)
+  {
+    DeviceAddress aaa;
+    DS18.getAddress(aaa, i);
+    printAddress(aaa);
+    Serial.println();
+  }
 
   // dht.begin();
   // sensors_hist.Reset();
 
   control_variables.time_synced = getTime(); // Sync Time Online
-
 
   // Loads the last time pump was automatically trigerred
   if (control_variables.is_SPIFFS_mounted)
@@ -3208,7 +3619,8 @@ void setup()
     }
   }
   // get initial reading of the values
- NEWupdateValues(true);
+  control_variables.disable_sensors_update = false;
+  updateValues(true);
 
   if (Pump.WaterState == 0)
     Pump.tank_0_percent = true;
@@ -3224,14 +3636,12 @@ void setup()
     Serial.printf("Can't Connect to MQTT Error Code : %d\n", HiveMQ.state());
   HiveMQ.subscribe("Turing/Color");
 
-  LED_Strip.setBoundries(0, 10);
-  beacons.setBoundries(0, BEACONS_SIZE - 1);
-  onBoardLEDs.setBoundries(0, ONBOARD_RGB_SIZE - 1);
-  onBoardLEDs.setMode(onboard_leds, LED_Animations::BlinkTwoColor, CRGB::DarkGreen, CRGB::Pink);
-  onBoardLEDs.setInterval(500);
+  LED_Strip.setMode(leds, LED_Animations::FadeInOutSolid, CRGB::DeepPink);
+  LED_Strip.setInterval(40);
+  onBoardLEDs.setMode(onboard_leds, DebugCodes);
+  // onBoardLEDs.setMode(onboard_leds, LED_Animations::FadeInOutSolid, CRGB::DarkGreen, CRGB::Pink);
+  // onBoardLEDs.setInterval(500);
   FastLED.setBrightness(64);
-
-  LED_Strip.setInterval(300);
 
   xTaskCreatePinnedToCore(
       LED_TASK,    // Function to implement the task /
@@ -3252,15 +3662,17 @@ void setup()
   Sensors.suppressError = true;
   Serial.printf(">>>>>>>>>>>END OF SETUP %dms<<<<<<<<\n", millis());
 #endif
+  SIPO_Write(4, 1, true);
+  // control_variables.disable_sensors_update;
 }
 
 void loop()
 {
+  esp_err_t rmt_driver_install(rmt_channel_t channel, size_t rx_buf_size, int intr_alloc_flags);
   ArduinoOTA.handle();
   Blynk.run();
   HiveMQ.loop();
-  NEWupdateValues();
-
+  updateValues();
   tcpServer.HandleServer();
 
   if (WiFi.scanComplete() > 0 && control_variables.SendWifiResults)
@@ -3285,7 +3697,18 @@ void loop()
   }
   EVERY_N_SECONDS(2)
   {
+    // setMuxPort(RAIN_PIN);
+    // delay(100);
+    // int f = 0;
+    // for (size_t i = 0; i < 10; i++)
+    // {
+    // f += analogRead(MUX_INPUT);
+    // }
+    // f = f/10;
+    // Serial.printf("%d\n",f);
+
     Sensors.report();
+    Sensors.Timeout_Inactives();
   }
 
   EVERY_N_SECONDS(300)
@@ -3303,15 +3726,14 @@ void loop()
       int StartMillis = millis();
       bool beauty = false;
       Serial.printf("Trying to reconnect to \'%s\'\n", WIFISSID);
-      bool beauty_two = false;
+      onBoardLEDs.setMode(onboard_leds, WiFi_Blink, CRGB::DarkGreen, CRGB::DarkRed, 500);
+
       while (WiFi.status() != WL_CONNECTED && millis() - StartMillis < 10000)
       {
         if (millis() % 500 == 0 && beauty)
         {
           Serial.print(".");
           beauty = false;
-          onboard_leds[0] = CRGB(0xFF * beauty_two, 0xFF * !beauty_two, 0);
-          beauty_two = !beauty_two;
           FastLED.show();
         }
         else if (millis() % 100 != 0)
@@ -3323,6 +3745,7 @@ void loop()
       {
         Serial.printf("\nNetwork '%s' not found.\n", WIFISSID);
       }
+      onBoardLEDs.goToLastMode(onboard_leds);
     }
     if (!HiveMQ.connected())
     {
@@ -3331,11 +3754,13 @@ void loop()
       HiveMQ.unsubscribe("Turing/Color");
 
       if (HiveMQ.connect(DEVICE_NAME, MQTT_USER, MQTT_PASSWD))
+      {
         Serial.println("MQTT Connected");
+        HiveMQ.subscribe("Turing/Shell");
+        HiveMQ.subscribe("Turing/Color");
+      }
       else
         Serial.printf("Can't Connect to MQTT Error Code : %d\n", HiveMQ.state());
-      HiveMQ.subscribe("Turing/Shell");
-      HiveMQ.subscribe("Turing/Color");
     }
   }
 
@@ -3372,7 +3797,7 @@ void loop()
     StopPump();
   }
 
-  if (control_variables.auto_ldr_overriden && hour() == control_variables.aut_ldr_resume_time)
+  if (control_variables.auto_ldr_overriden && hour() == control_variables.auto_ldr_resume_time)
   {
     control_variables.auto_ldr_overriden = false;
     user_preferences.AutoLDR = true;
@@ -3383,7 +3808,7 @@ void loop()
   {
     _disable = !_disable;
     FastLED.setBrightness(127 * _disable);
-    delay(1);
+    delay(10);
   }
 
   if (digitalRead(TEST_BUTTON) == HIGH)
