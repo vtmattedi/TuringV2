@@ -1,0 +1,11 @@
+robtillaart/ADS1X15@^0.4.2
+adafruit/Adafruit Unified Sensor@^1.1.5
+adafruit/Adafruit ADS1X15@^2.5.0
+fastled/FastLED@^3.5.0
+milesburton/DallasTemperature@^3.10.0
+blynkkk/Blynk@^1.1.0
+bblanchon/ArduinoJson@^6.21.3
+https://github.com/vtmattedi/NightMareNetwork.git
+wnatth3/WiFiManager@^2.0.16-rc.2
+adafruit/DHT sensor library@^1.4.4
+https://github.com/vtmattedi/NightMareTCP.git

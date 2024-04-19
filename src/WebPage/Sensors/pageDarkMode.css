@@ -1,0 +1,71 @@
+
+.container{
+    background-color: aquamarine;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    text-align: center; /* Center the text */
+}
+
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: Arial, sans-serif; /* Set the font */
+}
+
+table th, table td {
+    border: 1px solid #a3a3a384;
+    text-align: center; /* Center the text */
+    padding: 8px;
+}
+
+
+table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+table tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+/* Style for Online status */
+table .online {
+    background-color: #e6ffe6; /* Light green */
+}
+
+/* Style for Offline status */
+table .offline {
+    background-color: #ffe6e6; /* Light red */
+}
+
+/* Style for Unknown status */
+table .unknown {
+    background-color: #f2f2f2; /* Light gray */
+}
+
+
+/* Style for changed cells */
+table td.changed {
+    animation-name: changeBackground;
+    animation-duration: 1s;
+    animation-fill-mode: forwards;
+}
+
+@keyframes changeBackground-even {
+    from {
+        background-color: #ffff99; /* Initial color (light yellow) */
+    }
+    to {
+        background-color: #f9f9f9; /* Final color (light red) */
+    }
+} 
+
+@keyframes changeBackground-odd {
+    from {
+        background-color: #ffff99; /* Initial color (light yellow) */
+    }
+    to {
+        background-color: #ffffff; /* Final color (light red) */
+    }
+} 

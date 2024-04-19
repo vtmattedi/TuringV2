@@ -1,6 +1,9 @@
-bblanchon/ArduinoJson@^6.21.3
-milesburton/DallasTemperature@^3.10.0
-adafruit/Adafruit Unified Sensor@^1.1.5
 blynkkk/Blynk@^1.1.0
+https://github.com/vtmattedi/NightMareTCP.git
+https://github.com/vtmattedi/NightMareNetwork.git
+milesburton/DallasTemperature@^3.10.0
+bblanchon/ArduinoJson@^6.21.3
+wnatth3/WiFiManager@^2.0.16-rc.2
 adafruit/DHT sensor library@^1.4.4
+adafruit/Adafruit Unified Sensor@^1.1.5
 fastled/FastLED@^3.5.0

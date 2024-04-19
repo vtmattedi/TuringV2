@@ -1,0 +1,39 @@
+const char *mux_html = R"==(<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turing Mux/Shifter</title>
+    <link rel="stylesheet" type="text/css" href="common.css">
+    <script src="common.js" defer></script>
+    <script src="mux.js" defer></script>
+</head>
+
+
+<body>
+    <!-- <div class="dark-mode-toggle">
+        <input type="checkbox" id="dark-mode-toggle-checkbox" onclick="toggleDarkMode(this.checked)">
+        <label for="dark-mode-toggle-checkbox">Dark Mode</label>
+    </div> -->
+    <div class="container">
+
+        <h1>Turing Gardener</h1>
+        <div class="pump-container"><label>Mux and SIPO Shifter:</label></div>
+        <div id="time-data"><label>Mux and SIPO Shifter:</label></div>
+       
+        <div class="pump-container">
+            <div id="mux-data"></div>
+            <div id="sipo-data"></div>
+        </div>
+        <div class="switch-container" style="justify-content: center;"><label>Hide "NOT_DEFINED":</label>
+            <label class="switch">
+                <input type="checkbox" id="hide-not-defined"  onchange="refreshData()">
+                <span class="slider round"></span>
+            </label>
+        </div>
+        
+    </div>
+</body>
+
+</html>)==";
