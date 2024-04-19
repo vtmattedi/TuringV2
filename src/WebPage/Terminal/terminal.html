@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="terminal.css">
+    <script src="common.js" defer></script>
+    <script src="terminal.js" defer></script>
+</head>
+
+<body>
+    <div class="outerwrap">
+        <div style="display: flex; flex-direction: row; justify-content: center; ">
+            <div id="titleName" class="titleC">
+                {DEVICE_NAME}
+            </div>
+            <div id="titleContainer" class="titleC">
+                Terminal
+            </div>
+        </div>
+        <br>
+        <div class="wrap">
+            <div id="terminalContainer">
+                <div style="font-size: x-large;" id="terminal"></div>
+            </div>
+            <div id="inputContainer">
+                <div id="inputLine">
+                    <span>></span>
+                    <input id="input">
+                </div>
+                <button  onclick='send();'>Send</button>
+                <button onclick='terminal.innerHTML = "";'>Clear</button>
+            </div>
+        </div>
+        <div style="display: flex; flex-direction: row; justify-content: center; ">
+            <div id="subName" class="subC">
+                <i>MattediWorks&copy; 2024</i>
+            </div>
+        </div>
+    </div>
+    <script>
+
+    </script>
+</body>
+
+</html>

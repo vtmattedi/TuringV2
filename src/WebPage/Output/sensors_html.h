@@ -1,0 +1,61 @@
+const char *sensors_html = R"==(<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turing Sensors Info</title>
+    <link rel="stylesheet" type="text/css" href="common.css">
+    <script src="common.js" defer></script>
+    <script src="sensors.js" defer></script>
+</head>
+
+
+<body>
+    <!-- <div class="dark-mode-toggle">
+        <input type="checkbox" id="dark-mode-toggle-checkbox" onclick="toggleDarkMode(this.checked)">
+        <label for="dark-mode-toggle-checkbox">Dark Mode</label>
+    </div> -->
+    <div class="container">
+        <h1>Turing Gardener</h1>
+        <div class="pump-container"><label>Pump is:</label><label id="pump-status">loading</label></div>
+        <div id="server-data"></div>
+        <!-- Rounded switch -->
+        <div class="toggles-container">
+            <div class="switch-container"><label>Hide Unknown:</label>
+                <label class="switch">
+                    <input type="checkbox" id="hideunknownsw" onchange="refreshData()">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="switch-container"><label>Hide Offline:</label>
+                <label class="switch">
+                    <input type="checkbox" id="hideofflinesw" onchange="refreshData()">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+        <div>
+            <div class="toggles-container">
+                
+                <div class="switch-container"><label>Force Start:</label>
+                    <label class="switch">
+                        <input type="checkbox" id="force-start-checkbox" onchange="refreshData()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <button onclick="triggerPump(false)">Trigger Pump</button>
+                <button onclick="triggerPump(true)">Auto</button>
+            </div>
+            <div class="toggles-container">
+                <label for="pump-time-input">Pump Activation Time (ms): </label>
+                <input type="number" class="numinput" id="pump-time-input" min="1" max="20000" step="1" value="5000">
+              
+            </div>
+        </div>
+        <div class="pump-container"><label id="pump-confirm">loading</label></div>
+        <div class="pump-container"><label>Info:</label><label id="pump-info">loading</label></div>
+    </div>
+</body>
+
+</html>)==";

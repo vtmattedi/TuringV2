@@ -32,3 +32,5 @@
 *.app
 
 /include/Creds
+/.pio
+/.vscode

@@ -1,0 +1,165 @@
+:root
+{
+    --w_size: 800px;
+    --font_size_title: 40px;
+    --font_size_terminal: 14px;
+}
+
+
+
+body {
+    background-color: #000;
+    color: #0F0;
+    font-family: monospace;
+    padding: 10px;
+  
+}
+.outerwrap {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.wrap {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center; /* Added to center horizontally */
+    min-width: 400px;
+    max-width: 800px;
+   
+    margin: auto; /* Added to center vertically */
+}
+@media (max-width: 768px) {
+    .wrap {
+        min-width: 100%; /* Full width for mobile */
+        max-width: 100%; /* Full width for mobile */
+    }
+}
+
+#terminalContainer {
+    border: 2px solid #0F0;
+    padding: 10px;
+    margin: auto;
+    overflow-y: scroll;
+    height: 600px;
+    width: var(--w_size);
+}
+
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 400dpi) {
+    :root {
+        --font_size_terminal: 18px;
+    }
+   
+
+}
+
+#inputContainer {
+    border: 2px solid #0F0;
+    padding: 10px;
+    margin: auto;
+    width: var(--w_size);
+    display: flex;
+
+}
+
+#inputLine {
+    width: var(--w_size);
+    display: flex;
+    align-items: center;
+}
+
+input {
+    background-color: #000;
+    color: #0F0;
+    font-family: monospace;
+    width: 100%;
+    /* box-sizing: border-box; */
+    /* width: fit-content; */
+}
+
+button {
+    font-family: monospace;
+    font-size: 20px;
+    min-width: 10vw;
+}
+
+#terminal {
+    white-space: pre-wrap;
+    line-height: 1.5;
+    text-size-adjust: 80px;
+    font-size: 8vh;
+    overflow-x: auto;
+}
+
+
+
+.highlight {
+    color: #F00;
+}
+
+.highlightBracket {
+    color: rgb(0, 255, 221);
+}
+
+.highlightDateTime {
+    color: #FF0;
+}
+
+.highlightDateTime {
+    color: #FF0;
+}
+
+.highlightBraces {
+    color: #fff;
+}
+
+.highlightText {
+    color: rgb(255, 166, 0);
+}
+
+#titleContainer {
+    animation: myAnimRight 2s ease 0s 1 reverse forwards;
+
+}
+
+#titleName {
+    animation: myAnimLeft 2s ease 0s 1 reverse forwards;
+
+}
+
+@keyframes myAnimLeft {
+    0% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(-250px);
+    }
+}
+
+@keyframes myAnimRight {
+    0% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(250px);
+    }
+
+}
+
+.titleC {
+    margin-right: 1vh;
+    margin-left: 1vh;
+    font-size: var(--font_size_title);
+}
+
+.subC {
+    margin-top: 1vh;
+}

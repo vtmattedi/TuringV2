@@ -1,132 +1,15 @@
-// Make sure to have these definition on top of your code or else Blynk won't be able to connect.
-#include <D:\Projects\PIO\TuringV2\TuringV2\include\Creds\BlynkCred.h>
-#include <D:\Projects\PIO\TuringV2\TuringV2\include\Creds\a.h>
-#define PROTO // Toggle comment to switch between upload to Turing or Jupiter
+#pragma once
 
-
-#define USE_SPIFFS
-
-#define DEBUG
-#define BLYNK_PRINT Serial
-bool _disable = false;
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <BlynkSimpleEsp32.h>
-#include <ESPmDNS.h>
-#include "OneWire.h"
-#include "DallasTemperature.h"
-#include <D:\Projects\PIO\TuringV2\TuringV2\lib\Time-master\TimeLib.h>
-#include <HTTPClient.h>
-#include <WiFiUdp.h>
-#include <ArduinoOTA.h>
-#include <DNSServer.h>
-#include "esp_task_wdt.h"
-#ifdef USE_SPIFFS
-#include <SPIFFS.h>
-#include <SPI.h>
-#include "FS.h"
-#endif
-#include <D:\Projects\PIO\TuringV2\TuringV2\include\Creds\WifiCred.h>
-
-#include "DHT.h"
-#include <D:\Projects\PIO\TuringV2\TuringV2\lib\NewPing\src\NewPing.h>
-#include <D:\Projects\PIO\TuringV2\TuringV2\lib\NightMare TCP\nightmaretcp.h>
-
-#pragma region New Board pins
-
-#define SIPO_CLK 4
-#define SIPO_LATCH 17
-#define SIPO_DATA 16
-
-#define MUX_S0 17
-#define MUX_S1 16
-#define MUX_S2 18
-#define MUX_S3 19
-#define MUX_ENABLE 25
-#define MUX_INPUT 33
-
-#define US_TRIG 27
-#define US_ECHO 14
+#include <Arduino.h>
+#include <FastLED.h>
 
 #define WS2812_PIN 23
 #define WS2811_PIN 26
-
 #define ONBOARD_RGB_PIN 2
+
 #define ONBOARD_RGB_SIZE 3
 
-// SIPO outputs
-#define LED_0 0
-#define LED_1 1
-#define LED_2 2
-#define MOIST_EN0 3
-#define MOIST_EN1 4
-#define RELAY_PIN 5
-
-// MUX Selectors
-#define MOIST_1 0
-#define MOIST_2 1
-#define RAIN_PIN 5
-#define DHT_PIN 9
-#define DS18b20_PIN 10
-#define WL_BOTTOM 13
-#define WL_MIDDLE 12
-#define LDR_PIN 14
-
-#pragma endregion
-
-#pragma region FastLED
-
-#include <FastLED.h>
-
-#pragma region HIVE MQTT
-#include <D:\Projects\PIO\TuringV2\TuringV2\lib\pubsubclient-2.8\src\PubSubClient.h>
-#include <D:\Projects\PIO\TuringV2\TuringV2\include\Creds\HiveMQCred.h>
-void HiveMQ_Callback(char *topic, byte *payload, unsigned int length);
-
-WiFiClientSecure hive_client;
-PubSubClient HiveMQ(hive_client);
-
-static const char *root_ca PROGMEM = R"EOF(
------BEGIN CERTIFICATE-----
-MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
-TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
-cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
-WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
-ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
-MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
-h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
-0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
-A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
-T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
-B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
-B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
-KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
-OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
-jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
-qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
-rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
-HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
-hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
-ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
-3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
-NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
-ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
-TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
-jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
-oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
-4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
-mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
-emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
------END CERTIFICATE-----
-)EOF";
-
-void MQTT_Send(String topic, String message)
-{
-    HiveMQ.publish(topic.c_str(), message.c_str(), true);
-}
-
-#pragma endregion
-
+// 3 Ws2012E Lights
 // 2 WS2811 lights
 // 1 WS2818b strip
 
@@ -142,6 +25,9 @@ void MQTT_Send(String topic, String message)
 #define LED_STRIP_SIZE 300
 #define LED_STRIP_COLOR_ORDER GRB
 
+#define ONBOARD_RGB_COLOR_ORDER GRB
+#define ONBOARD_RGB_SIZE 3
+
 #define LED_MAX_AMPS
 #define LED_VOLTAGE
 #define TOTALSIZE LED_STRIP_SIZE + BEACONS_SIZE + ONBOARD_RGB_SIZE
@@ -153,9 +39,84 @@ uint16_t LED_BaseColor_1 = 0x0; // Contains an RGB value for the strip
 uint16_t LED_BaseColor_2 = 0x0; // Contains an RGB value for the stripw
 int patternIndex = 0;
 
-CRGB leds[LED_STRIP_SIZE];
+CRGB strip_leds[LED_STRIP_SIZE];
 CRGB beacons_leds[BEACONS_SIZE];
 CRGB onboard_leds[ONBOARD_RGB_SIZE];
+
+class Animation
+{
+public:
+    CRGB baseColor;
+    void Run(CRGB leds[]);
+    void Init(CRGB leds[], CRGB Color);
+};
+
+class Solid : Animation
+{
+    void Init(CRGB leds[], CRGB Color)
+    {
+        for (size_t i = 0; i < sizeof(leds) / sizeof(leds[0]); i++)
+        {
+            leds[0] = Color;
+        }
+        FastLED.show();
+    }
+    void Run(CRGB leds[])
+    {
+        return;
+    }
+};
+
+class Blink : Animation
+{
+    bool on = true;
+    void Init(CRGB leds[], CRGB Color)
+    {
+        baseColor = Color;
+        for (size_t i = 0; i < sizeof(leds) / sizeof(leds[0]); i++)
+        {
+            leds[0] = Color;
+        }
+        FastLED.show();
+    }
+    void Run(CRGB leds[])
+    {
+        on = !on;
+        for (size_t i = 0; i < sizeof(leds) / sizeof(leds[0]); i++)
+        {
+            leds[0] = baseColor * on;
+        }
+        return;
+    }
+};
+
+class Fade : Animation
+{
+    byte bright = 0x77;
+    bool dec = false;
+    void Init(CRGB leds[], CRGB Color)
+    {
+        baseColor = Color;
+        for (size_t i = 0; i < sizeof(leds) / sizeof(leds[0]); i++)
+        {
+            leds[0] = Color;
+        }
+        FastLED.show();
+    }
+    void Run(CRGB leds[])
+    {
+        if (bright == 0xff || bright == 0)
+            dec = !dec;
+        dec ? bright-- : bright++;
+
+        for (size_t i = 0; i < sizeof(leds) / sizeof(leds[0]); i++)
+        {
+            leds[i] = baseColor; 
+        }
+        fadeToBlackBy(leds,sizeof(leds) / sizeof(leds[0]),0xff - bright);
+        return;
+    }
+};
 
 enum LED_Animations
 {
@@ -172,6 +133,7 @@ enum LED_Animations
     OnePixelLoop,
     WiFiStrength,
     WiFiStrengthInverse,
+    WiFi_Blink
 };
 
 struct LED_Controller
@@ -186,6 +148,7 @@ private:
     int _end_index = TOTALSIZE;
     int _num_of_leds = TOTALSIZE;
     int _interval = 25;
+    int _old_interval = 25;
     bool _helperFlag = false;
     int _helperInt = 0;
 
@@ -235,6 +198,7 @@ public:
 
         old_baseColor = baseColor;
         old_baseColor2 = baseColor2;
+        _old_interval = interval;
         baseColor = color1;
         baseColor2 = color2;
         _lastMillis = 0;
@@ -302,6 +266,58 @@ public:
             }
             led_array[_start_index] = baseColor;
         }
+        else if (current_animation == WiFi_Blink)
+        {
+            _helperFlag = true;
+        }
+    }
+
+    void setFixed2(CRGB led_array[], int size, CRGB color1 = 0xFF)
+    {
+        setFixed(led_array, _start_index, _start_index + size, color1);
+        Serial.printf("s: %d f: %d  -%dd\n", _start_index, _start_index + size, size);
+    }
+    void setFixed(CRGB led_array[], int start, int finish, CRGB color1 = 0xFF)
+    {
+        _progbar_is_running = true;
+        Serial.printf("s: %d f: %d\n", start, finish);
+        if (finish < start)
+        {
+            int t = finish;
+            finish = start;
+            start = t;
+        }
+
+        if (start < _start_index)
+            start = _start_index;
+        if (finish > _end_index)
+            finish = _end_index;
+        FastLED.clear();
+        for (size_t i = start; i <= finish; i++)
+        {
+            led_array[i] = color1;
+        }
+        FastLED.show();
+    }
+
+    void showStages(CRGB led_array[])
+    {
+        _progbar_is_running = true;
+        byte b = 0;
+        FastLED.clear();
+        for (size_t i = _start_index; i <= _end_index; i++)
+        {
+            if (i % 5 == 0)
+            {
+                led_array[i] = CRGB::White;
+                b++;
+            }
+            else
+            {
+                led_array[i] = CRGB::Red;
+            }
+        }
+        FastLED.show();
     }
 
     void run(CRGB led_array[])
@@ -342,7 +358,7 @@ public:
         {
             for (size_t i = _start_index; i <= _end_index; i++)
             {
-                leds[i] = CRGB(baseColor.r * _helperFlag + baseColor2.r * !_helperFlag, baseColor.g * _helperFlag + baseColor2.g * !_helperFlag, baseColor.b * _helperFlag + baseColor2.b * !_helperFlag);
+                strip_leds[i] = CRGB(baseColor.r * _helperFlag + baseColor2.r * !_helperFlag, baseColor.g * _helperFlag + baseColor2.g * !_helperFlag, baseColor.b * _helperFlag + baseColor2.b * !_helperFlag);
             }
             _helperFlag = !_helperFlag;
         }
@@ -504,7 +520,14 @@ public:
                 }
             }
         }
-
+        else if (current_animation == WiFi_Blink)
+        {
+            if (_helperFlag)
+                led_array[_start_index] = baseColor;
+            else
+                led_array[_start_index] = baseColor2;
+            _helperFlag = !_helperFlag;
+        }
         FastLED.show();
     }
 
@@ -533,7 +556,7 @@ public:
         byte delta = xMax - xMin;
         if (xMax != 0)
         {
-            hsv.s = (int)(delta)*255 / xMax;
+            hsv.s = (int)(delta) * 255 / xMax;
         }
         else
         {
@@ -563,7 +586,7 @@ public:
     }
     void goToLastMode(CRGB led_array[])
     {
-        setMode(led_array, old_animation, old_baseColor, old_baseColor2, _interval);
+        setMode(led_array, old_animation, old_baseColor, old_baseColor2, _old_interval);
     }
 
     void progBar(CRGB led_array[], byte percentage, byte numLED, CRGB ValueColor = CRGB::DarkGreen, CRGB BackColor = CRGB::DarkRed, int delayMS = 4000)
@@ -669,191 +692,4 @@ void SetOnboardLEDS(CRGB COLOR, bool skipShow = false)
 
     if (!skipShow)
         FastLED.show();
-}
-
-#pragma endregion
-
-
-
-
-// TEST BUTTON
-#define TEST_BUTTON 0
-bool digital_debounce = false;
-
-
-#pragma region TCP server
-
-NightMareTCPServer tcpServer(100);
-
-#pragma endregion
-
-// Callback for payload at the mqtt topic
-void HiveMQ_Callback(char *topic, byte *payload, unsigned int length)
-{
-
-    // GPT:: String incommingMessage((char*) payload, length);
-    String incommingMessage = "";
-    for (int i = 0; i < length; i++)
-        incommingMessage += (char)payload[i];
-
-    Serial.printf("MQTT::[%s]-->[%s]\n", topic, incommingMessage.c_str());
-    String in_topic = "";
-    in_topic += topic;
-}
-
-void setup()
-{
-    #define DEVICE_NAME "test"
-    // Debug console
-    Serial.begin(115200);
-
-    // Declare PinModes
-
-    WiFi.begin(WIFISSID, WIFIPASSWD);
-    bool createAp = false; // flag for creating an AP in case we can't connect to wifi
-    bool beauty = true;    // Esthetics for Serial.print();
-    WiFi.hostname(DEVICE_NAME);
-    // Try to connect to WiFi
-    int StartMillis = millis();
-    while (WiFi.status() != WL_CONNECTED && !createAp)
-    {
-        if (millis() % 100 == 0 && beauty)
-        {
-            Serial.print(".");
-            beauty = false;
-            FastLED.show();
-        }
-        else if (millis() % 100 != 0)
-        {
-            beauty = true;
-        }
-
-        if (millis() - StartMillis > 14999)
-        {
-            Serial.printf("\nNetwork '%s' not found.\n", WIFISSID);
-            createAp = true;
-        }
-    }
-    if (createAp)
-    {
-        WiFi.enableAP(true);
-        WiFi.mode(WIFI_AP_STA);
-        WiFi.softAP(WIFI_SOFTAP_SSID, WIFI_SOFTAP_PASSWD);
-        // dnsServer.start(53, "*", WiFi.softAPIP());
-        Serial.println("");
-        Serial.print("Creating WiFi Ap.\n ---SSID:  ");
-        Serial.println(WIFI_SOFTAP_SSID);
-        Serial.print(" --IP address: ");
-        Serial.println(WiFi.softAPIP());
-    }
-    else
-    {
-        // fill_solid(leds, 2, 0x00FF00);
-
-        for (size_t i = 0; i < 5; i++)
-        {
-            FastLED.setBrightness(255);
-            FastLED.show();
-            delay(200);
-            FastLED.setBrightness(0);
-            FastLED.show();
-            delay(200);
-        }
-        Serial.print("Connected to ");
-        Serial.println(WIFISSID);
-        Serial.print("IP address: ");
-        Serial.println(WiFi.localIP());
-        Serial.print("Signal RSSI: ");
-        Serial.println(WiFi.RSSI());
-        Serial.print("DNS IP: ");
-        Serial.println(WiFi.dnsIP().toString());
-        WiFi.setAutoReconnect(true);
-    }
-   
-    hive_client.setCACert(root_ca);
-    HiveMQ.setServer(MQTT_URL, MQTT_PORT);
-    HiveMQ.setCallback(HiveMQ_Callback);
-
-    if (HiveMQ.connect(DEVICE_NAME, MQTT_USER_TEST, MQTT_PASSWD_TEST))
-        Serial.println("MQTT Connected");
-    else
-        Serial.printf("Can't Connect to MQTT Error Code : %d\n", HiveMQ.state());
-    HiveMQ.subscribe("#");
-}
-
-void loop()
-{
-
-    HiveMQ.loop();
-
-    EVERY_N_SECONDS(300)
-    {
-
-        if (!WiFi.isConnected())
-        {
-            WiFi.begin(WIFISSID, WIFIPASSWD);
-            int StartMillis = millis();
-            bool beauty = false;
-            Serial.printf("Trying to reconnect to \'%s\'\n", WIFISSID);
-            bool beauty_two = false;
-            while (WiFi.status() != WL_CONNECTED && millis() - StartMillis < 10000)
-            {
-                if (millis() % 500 == 0 && beauty)
-                {
-                    Serial.print(".");
-                    beauty = false;
-                    onboard_leds[0] = CRGB(0xFF * beauty_two, 0xFF * !beauty_two, 0);
-                    beauty_two = !beauty_two;
-                    FastLED.show();
-                }
-                else if (millis() % 100 != 0)
-                {
-                    beauty = true;
-                }
-            }
-            if (WiFi.status() != WL_CONNECTED)
-            {
-                Serial.printf("\nNetwork '%s' not found.\n", WIFISSID);
-            }
-        }
-        if (!HiveMQ.connected())
-        {
-            HiveMQ.disconnect();
-            if (HiveMQ.connect(DEVICE_NAME, MQTT_USER, MQTT_PASSWD))
-            {
-                Serial.println("MQTT Connected");
-                HiveMQ.subscribe("#");
-            }
-            else
-                Serial.printf("Can't Connect to MQTT Error Code : %d\n", HiveMQ.state());
-        }
-    }
-
-#ifdef PROTO
-    // TEST AREA
-    if (digitalRead(TEST_BUTTON) == LOW && digital_debounce)
-    {
-        _disable = !_disable;
-        FastLED.setBrightness(127 * _disable);
-        delay(1);
-    }
-
-    if (digitalRead(TEST_BUTTON) == HIGH)
-    {
-        digital_debounce = true;
-    }
-
-    if (Serial.available())
-    {
-        String s = "";
-        while (Serial.available() > 0)
-        {
-            char c = Serial.read();
-            if (c != 10 && c != 13)
-            {
-                s += c;
-            }
-        }
-    }
-#endif
 }
