@@ -48,7 +48,7 @@ const char *menu_html = R"==(<!DOCTYPE html>
             <strong>Version: </strong>
             0.6.34<br/>
             <em>
-                <small>Build Time: 2024-10-04 17:50:07.207175</small>
+                <small>Build Time: 2024-10-04 17:54:05.266139</small>
             </em>
         </div>
     </div>
