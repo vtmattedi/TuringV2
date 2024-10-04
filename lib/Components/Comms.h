@@ -27,6 +27,7 @@
 #include <../include/Creds/HiveMQCred.h>
 #include <ArduinoJson.h>
 
+//Legacy stuff for blynk usage
 uint16_t Blynk_upload_interval = 60;   // Sets the interval for uploading values to Blynk in seconds
 int Blynk_last_upload = 0;             // Keeps the timestamp of the last time it sent data over to Blynk
 uint16_t Blynk_telemetry_interval = 5; // Sets the interval for the telemetry data to Blynk in seconds
@@ -40,5 +41,5 @@ WiFiClientSecure hive_client;
 PubSubClient HiveMQ(MQTT_URL, MQTT_PORT, hive_client);
 
 extern String HandleMsg(String, byte);
-NightMareTCPServer tcpServer(100, true);
+
 

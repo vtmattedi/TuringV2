@@ -8,7 +8,7 @@
 
 /// Used to estimated the amount of water based on the amount of time the pump was on
 #define PUMP_HALF_TO_0_TIME 147707
-
+/// @brief The source of the command that triggered the pump
 enum CommandSource
 {
   _Serial = 10,
@@ -47,14 +47,9 @@ public:
 
   bool Start(int time = -1, bool force = false);
   bool Stop();
-  // Checks wheater or not it is time to water the garden again checks for the prefered hour to do so or
-  // if it has been 4 hours since the timer has been triggered and the prefered hour have not been reached yet
   bool auto_pump_time_ajusted(uint32_t current_time);
-
   void updateWaterLevel(uint8_t newWaterLevel);
-
   void autoRun(bool force = false);
-
   void automation(bool forceAuto = false);
 };
 

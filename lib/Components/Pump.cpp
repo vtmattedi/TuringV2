@@ -49,6 +49,10 @@ void PumpController::CalcWaterLevel(int Pump_runtime, int forceState, int forceU
   //  Serial.printf("{%d}{%d}{%d} --- %d - %d - %d\n",Pump_runtime,forceState,forceUsedPump,pump.WaterState,Water_Level, pump.UsedPumpTime);
 }
 
+// Starts the pump for a specified amount of time
+// If the pump is already running or the time is 0 it will return false
+// If the water level is 0 and the operation is not forced it will return false
+// If the operation is forced it will start the pump regardless of the water level
 bool PumpController::Start(int time, bool force)
 {
   Serial.printf("[PUMP START] (%d) ms -f = %d\n", time, force);
@@ -82,6 +86,9 @@ bool PumpController::Start(int time, bool force)
     end_time = 0;
   return false;
 }
+
+// Stops the pump and logs the amount of time it was on
+// If the pump is not running it will return false
 bool PumpController::Stop()
 {
   // SIPO_Write(RELAY_PIN, PUMP_OFF);
@@ -128,6 +135,8 @@ bool PumpController::auto_pump_time_ajusted(uint32_t current_time)
   return false;
 }
 
+// Updates the water level and stops the pump if the water level is too low
+// If the pump is running and the water level is too low it will stop the pump if operation was not forced
 void PumpController::updateWaterLevel(uint8_t newWaterLevel)
 {
   if (is_running)
@@ -213,7 +222,7 @@ void PumpController::automation(bool forceAuto)
     {
       if (!timeSynced)
       {
-        Serial.printf("Auto pump Triggered but check for time sync first\n");
+        //Serial.printf("Auto pump Triggered but check for time sync first\n");
         return;
       }
      // Serial.printf("Last Auto Run = %d -> %d\n", now(), last_auto_run);

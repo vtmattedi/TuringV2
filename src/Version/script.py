@@ -5,7 +5,6 @@ Import("env")
 print("Current CLI targets", COMMAND_LINE_TARGETS)
 print("Current Build targets", BUILD_TARGETS)
 
-#VERSION_FOLDER = 'aaD:\Projects\PIO\Adler\Adler-IR\src\Version/'
 VERSION_FOLDER = env.subst("$PROJECT_DIR") + os.sep + "src" + os.sep + "Version" + os.sep
 VERSION_FILE = VERSION_FOLDER + 'version'
 VERSION_HEADER = 'Version.h'

@@ -8,6 +8,9 @@
 // Helper for debug
 #define wll(varname) varname, WLI.getWlPinByUnit(varname)
 
+/// @brief Configure which pins are used for the water level sensors
+/// So you can have the middle, bottom and extra water level sensors 
+/// in any order you want.
 struct WATER_LEVEL_INFO
 {
     uint8_t wl_0_pin = WL_BOTTOM;
