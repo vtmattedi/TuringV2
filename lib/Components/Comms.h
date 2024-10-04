@@ -42,4 +42,3 @@ PubSubClient HiveMQ(MQTT_URL, MQTT_PORT, hive_client);
 
 extern String HandleMsg(String, byte);
 
-

@@ -2613,7 +2613,6 @@ void setup()
 
       // Starts the TCP server (used for local debug mostly and NightMare integration)
       // hive_client.setCACert(mqtt_root_ca);
-
       tcpServer.setMessageHandler(HandleMsg);
       tcpServer.begin();
       Serial.println("TCP Started!");
@@ -2649,7 +2648,6 @@ void setup()
     Pump.tank_0_percent = true;
   if (Pump.WaterState <= 1)
     Pump.tank_50_percent = true;
-
   LED_Strip.setMode(strip_leds, LED_Animations::FadeInOutSolid, CRGB::DeepPink);
   LED_Strip.setInterval(40);
   onBoardLEDs.setMode(onboard_leds, DebugCodes);
