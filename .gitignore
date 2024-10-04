@@ -34,4 +34,4 @@
 /include/Creds
 
 .pio/
-.vscode/
+.vscode/*
