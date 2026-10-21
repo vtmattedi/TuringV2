@@ -1,0 +1,39 @@
+evidence:
+  - id: pcb-copper-gerber
+    type: manufacturing
+    authority: primary
+    files:
+      - Gerber_TopLayer.GTL
+      - Gerber_BottomLayer.GBL
+      - Drill_PTH_Through.DRL
+      - Drill_PTH_Through_Via.DRL
+    use: electrical connectivity
+
+  - id: odb-cam-job
+    type: manufacturing
+    authority: primary_derived
+    file: 3961371a_y32.tgz
+    use: CAM geometry cross-check
+
+  - id: top-assembly-render
+    type: assembly_render
+    authority: secondary
+    file: Top+null+SMT02303281183087.png
+    use: reference designators, labels, component placement
+
+  - id: bottom-assembly-render
+    type: assembly_render
+    authority: secondary
+    file: Bottom+null+SMT02303281183087.png
+    use: copper/placement visual cross-check
+
+  - id: recovered-bom
+    type: manufacturing_bom
+    authority: secondary
+    use: exact part identity/value where present
+
+confidence_levels:
+  certain: direct manufacturing evidence or exact BOM/silkscreen fact
+  strong: multiple independent sources agree
+  inferred: plausible from topology/function but not yet continuity-verified
+  unknown: unresolved

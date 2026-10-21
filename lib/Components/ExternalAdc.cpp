@@ -21,8 +21,9 @@ String get_EA_pin_name(uint8_t pin)
 
 void ExternalAdc::setup()
 {
-    Wire.begin();
+    Wire.begin(12,13);
     available = EA.begin(0x48);
+    EA.setGain(GAIN_ONE);
     if (!available)
     {
         Serial.println("ADS1115 not found");

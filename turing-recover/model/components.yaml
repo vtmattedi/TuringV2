@@ -1,0 +1,162 @@
+components:
+  U1:
+    value: AMS1117-3.3V
+    manufacturer: WPMtek
+    mpn: AMS1117-3.3V
+    footprint: SOT-223-3L
+    lcsc: C2688239
+    confidence: certain
+
+  SIPO:
+    value: TM74HC595
+    manufacturer: TM(Shenzhen Titan Micro Elec)
+    footprint: SOP-16
+    lcsc: C79097
+    confidence: certain
+
+  MUX16:
+    value: CD74HC4067SM96
+    manufacturer: TI
+    footprint: SSOP-24-208mil
+    lcsc: C98457
+    confidence: certain
+
+  DS18B20:
+    value: DS18B20
+    manufacturer: UMW
+    footprint: TO-92
+    lcsc: C376006
+    confidence: certain
+
+  LED0:
+    value: WS2812E-V5
+    manufacturer: Worldsemi
+    footprint: SMD5050-4P
+    lcsc: C2920042
+    confidence: certain
+  LED1:
+    value: WS2812E-V5
+    manufacturer: Worldsemi
+    footprint: SMD5050-4P
+    lcsc: C2920042
+    confidence: certain
+  LED2:
+    value: WS2812E-V5
+    manufacturer: Worldsemi
+    footprint: SMD5050-4P
+    lcsc: C2920042
+    confidence: certain
+
+  C-VCC:
+    value: 47uF
+    mpn: GRM188R60J476ME15D
+    manufacturer: muRata
+    footprint: 0603
+    lcsc: C140782
+    confidence: certain
+  C-SIPO:
+    value: 100nF
+    mpn: CC0603KRX7R9BB104
+    manufacturer: YAGEO
+    footprint: 0603
+    lcsc: C14663
+    confidence: certain
+  C-MUX:
+    value: 100nF
+    mpn: CC0603KRX7R9BB104
+    manufacturer: YAGEO
+    footprint: 0603
+    lcsc: C14663
+    confidence: certain
+  C-VIN:
+    value: 22uF
+    mpn: CL10A226MQ8NRNC
+    manufacturer: Samsung Electro-Mechanics
+    footprint: 0603
+    lcsc: C59461
+    confidence: certain
+
+  R1_VBAT:
+    value: 3.9k
+    mpn: 0603WAF3901T5E
+    manufacturer: UNI-ROYAL
+    footprint: 0603
+    lcsc: C23018
+    confidence: certain
+  R2_VBAT:
+    value: 1k
+    mpn: 0603WAF1001T5E
+    manufacturer: UNI-ROYAL
+    footprint: 0603
+    lcsc: C21190
+    confidence: certain
+  R-DS18:
+    value: 4.7k
+    mpn: 0603WAF4701T5E
+    manufacturer: UNI-ROYAL
+    footprint: 0603
+    lcsc: C23162
+    confidence: certain
+  R-DHT:
+    value: 4.7k
+    mpn: 0603WAF4701T5E
+    manufacturer: UNI-ROYAL
+    footprint: 0603
+    lcsc: C23162
+    confidence: certain
+
+  R_EN0:
+    value: 100R
+    mpn: 0603WAF1000T5E
+    manufacturer: UNI-ROYAL
+    footprint: 0603
+    lcsc: C22775
+    confidence: certain
+  R_EN1:
+    value: 100R
+    mpn: 0603WAF1000T5E
+    manufacturer: UNI-ROYAL
+    footprint: 0603
+    lcsc: C22775
+    confidence: certain
+  R_LDR2:
+    value: 100R
+    mpn: 0603WAF1000T5E
+    manufacturer: UNI-ROYAL
+    footprint: 0603
+    lcsc: C22775
+    confidence: certain
+
+  R_RGB_C1:
+    value: 100k
+    mpn: 0603WAF1003T5E
+    manufacturer: UNI-ROYAL
+    footprint: 0603
+    lcsc: C25803
+    confidence: certain
+  R_RGB_C2:
+    value: 100k
+    mpn: 0603WAF1003T5E
+    manufacturer: UNI-ROYAL
+    footprint: 0603
+    lcsc: C25803
+    confidence: certain
+
+  R_WL3: {value: 10k, footprint: 0603, lcsc: C25804, confidence: certain}
+  R_WL4: {value: 10k, footprint: 0603, lcsc: C25804, confidence: certain}
+  R_WL5: {value: 10k, footprint: 0603, lcsc: C25804, confidence: certain}
+  R_WL6: {value: 10k, footprint: 0603, lcsc: C25804, confidence: certain}
+  R_WL_2: {value: 10k, footprint: 0603, lcsc: C25804, confidence: certain}
+
+  LH1:
+    value: 1x19 female header
+    mpn: KH-2.54FH-1X19P-H8.5
+    manufacturer: kinghelm
+    pitch_mm: 2.54
+    confidence: certain
+  RH1:
+    value: 1x19 female header
+    mpn: KH-2.54FH-1X19P-H8.5
+    manufacturer: kinghelm
+    pitch_mm: 2.54
+    confidence: certain

@@ -1,0 +1,3 @@
+# Intentionally sparse at bootstrap.
+# A net is added only after it is validated against copper connectivity.
+nets: {}

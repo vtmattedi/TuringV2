@@ -1,0 +1,139 @@
+connectors:
+  Serial0:
+    pins_visible_top_to_bottom: [GND, TX, RX, VCC]
+    confidence: certain
+
+  SPI:
+    pins_visible_top_to_bottom:
+      - MISO_GPIO19
+      - MOSI_GPIO23
+      - SCK_GPIO18
+      - CS_GPIO5
+    confidence: certain
+
+  EXTRA_IO:
+    pins_visible_left_to_right:
+      - MUX_READ_GPIO33
+      - MUX_EN_GPIO25
+      - SIPO_CLK_GPIO4
+      - US_ECHO_GPIO14
+    confidence: certain
+
+  EXTRA_IO1:
+    pins_visible_left_to_right:
+      - IO34_PH
+      - CLEAR_PL
+      - SIPO1
+      - IO15
+    confidence: certain
+
+  I2C:
+    pins_visible_top_to_bottom:
+      - VCC
+      - SDA_GPIO21
+      - SCL_GPIO22
+      - GND
+    confidence: certain
+
+  BOARD_POWER:
+    pins_visible_top_to_bottom:
+      - 12V_IN
+      - GND
+      - 5V_IN
+      - GND
+    confidence: certain
+
+  BOARD_POWER_SELECT:
+    note: 'Silkscreen: Select input to regulator, otherwise the pwr rails are only passthrough and will not power the board.'
+    pins_visible: [12V, INPUT_SEL, 5V]
+    confidence: certain
+
+  WS2811:
+    pins_visible: [12V, VCC, IO26, GND]
+    confidence: certain
+
+  WS2812B:
+    pins_visible: [5V, VCC, IO23, GND]
+    confidence: certain
+
+  Ultrasonic:
+    pins_visible: [5V, TRIG_GPIO27, ECHO_GPIO14, GND]
+    confidence: certain
+
+  DS18_BUS:
+    pins_visible: [VCC, DS18_BUS, GND]
+    confidence: certain
+
+  LDR_PL_MUX_SELECT:
+    pins_visible: [IO16, IO17, IO18, IO19]
+    confidence: certain
+
+  MUX_SELECT:
+    note: 'Board silkscreen labels MUX select header adjacent to IO16/17/18/19.'
+    confidence: certain
+
+  GP_ST:
+    type: screw_terminal_4
+    confidence: certain
+  LDR_DS18:
+    type: screw_terminal_4
+    confidence: certain
+  MOIST3_5:
+    type: screw_terminal_4
+    confidence: certain
+  US1:
+    type: screw_terminal_4
+    confidence: certain
+  WL0_WL2:
+    type: screw_terminal_4
+    confidence: certain
+  MOIST0_2:
+    type: screw_terminal_4
+    confidence: certain
+  POWERIN:
+    type: screw_terminal_4
+    confidence: certain
+
+esp32_devkit_header_labels:
+  left_top_to_bottom:
+    - VCC
+    - null
+    - IO39
+    - IO36
+    - IO34
+    - IO35
+    - IO32
+    - IO33
+    - IO25
+    - IO26
+    - IO27
+    - IO14
+    - IO12
+    - null
+    - IO13
+    - null
+    - null
+    - null
+    - Vin
+  right_top_to_bottom:
+    - GND
+    - IO23
+    - IO22
+    - TX0
+    - RX0
+    - IO21
+    - GND
+    - IO19
+    - IO18
+    - IO5
+    - IO17
+    - IO16
+    - IO4
+    - null
+    - IO2
+    - IO15
+    - null
+    - null
+    - null
+  note: 'null means silkscreen label not visible/printed in the assembly render; pad still exists.'
+  confidence: certain_for_printed_labels_only
